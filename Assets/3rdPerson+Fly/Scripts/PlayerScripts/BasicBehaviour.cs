@@ -10,6 +10,7 @@ public class BasicBehaviour : MonoBehaviour
 	public float sprintFOV = 100f;                        // the FOV to use on the camera when player is sprinting.
 	public string sprintButton = "Sprint";                // Default sprint button input name.
 
+	private Rigidbody rb;
 	private float h;                                      // Horizontal Axis.
 	private float v;                                      // Vertical Axis.
 	private int currentBehaviour;                         // Reference to the current player behaviour.
@@ -27,6 +28,12 @@ public class BasicBehaviour : MonoBehaviour
 	private Rigidbody rBody;                              // Reference to the player's rigidbody.
 	public int groundedBool;                             // Animator variable related to whether or not the player is on the ground.
 	private Vector3 colExtents;                           // Collider extents for ground test. 
+
+	[SerializeField]private float staminaDelta = 5f;
+    [SerializeField]private float staminaRegen = 5f;
+    [SerializeField]private float maxStamina = 100f;
+    public float stamina = 100f;
+	public float HealthValue = 50f;
 
 	// Get current horizontal and vertical axes.
 	public float GetH { get { return h; } }
@@ -46,8 +53,9 @@ public class BasicBehaviour : MonoBehaviour
 
 	void Awake ()
 	{
-		// Set up the references.
-		behaviours = new List<GenericBehaviour> ();
+		rb = GetComponent<Rigidbody>();
+        // Set up the references.
+        behaviours = new List<GenericBehaviour> ();
 		overridingBehaviours = new List<GenericBehaviour>();
 		anim = GetComponent<Animator> ();
 		hFloat = Animator.StringToHash("H");
@@ -62,6 +70,7 @@ public class BasicBehaviour : MonoBehaviour
 
 	void Update()
 	{
+		float _time = Time.deltaTime;
 		// Store the input axes.
 		h = Input.GetAxis("Horizontal");
 		v = Input.GetAxis("Vertical");
@@ -78,14 +87,27 @@ public class BasicBehaviour : MonoBehaviour
 		{
 			changedFOV = true;
 			camScript.SetFOV(sprintFOV);
+			stamina -= staminaDelta * _time;
 		}
-		else if(changedFOV)
+		else
 		{
-			camScript.ResetFOV();
-			changedFOV = false;
-		}
-		// Set the grounded test on the Animator Controller.
-		anim.SetBool(groundedBool, IsGrounded());
+            if (changedFOV)
+			{
+				camScript.ResetFOV();
+				changedFOV = false;
+			}
+        }
+
+        if (stamina < maxStamina && (!IsSprinting() && IsGrounded()))
+        {
+			if (stamina < 0)
+			{
+				stamina = 0;
+			}
+            stamina += staminaRegen * _time;
+        }
+        // Set the grounded test on the Animator Controller.
+        anim.SetBool(groundedBool, IsGrounded());
 	}
 
 	// Call the FixedUpdate functions of the active or overriding behaviours.
@@ -318,11 +340,22 @@ public class BasicBehaviour : MonoBehaviour
 		}
 	}
 
-	// Function to tell whether or not the player is on ground.
-	public bool IsGrounded()
+    private void OnCollisionEnter(Collision collision)
+    {
+        float _speed = rb.velocity.magnitude;
+		Debug.Log(_speed);
+        if (_speed > 30f)
+        {
+            HealthValue -= _speed * 0.2f;
+        }
+    }
+
+    // Function to tell whether or not the player is on ground.
+    public bool IsGrounded()
 	{
 		Ray ray = new Ray(this.transform.position + Vector3.up * 2 * colExtents.x, Vector3.down);
-		return Physics.SphereCast(ray, colExtents.x, colExtents.x + 0.2f);
+		bool onGround = Physics.SphereCast(ray, colExtents.x, colExtents.x + 0.2f);
+        return onGround;
 	}
 }
 

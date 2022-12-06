@@ -3,6 +3,7 @@
 // MoveBehaviour inherits from GenericBehaviour. This class corresponds to basic walk and run behaviour, it is the default behaviour.
 public class MoveBehaviour : GenericBehaviour
 {
+	BasicBehaviour BasicBehaviour;
 	public float walkSpeed = 0.15f;                 // Default walk speed.
 	public float runSpeed = 1.0f;                   // Default run speed.
 	public float sprintSpeed = 2.0f;                // Default sprint speed.
@@ -21,6 +22,7 @@ public class MoveBehaviour : GenericBehaviour
 	// Start is always called after any Awake functions.
 	void Start()
 	{
+		BasicBehaviour = GetComponent<BasicBehaviour>();
 		// Set up the references.
 		jumpBool = Animator.StringToHash("Jump");
 		groundedBool = Animator.StringToHash("Grounded");
@@ -39,9 +41,10 @@ public class MoveBehaviour : GenericBehaviour
 		{
 			jump = true;
 		}
-		if (Input.GetMouseButtonDown(0))
+		if (Input.GetMouseButtonDown(0) && BasicBehaviour.stamina > 10)
 		{
-			F++;
+            BasicBehaviour.stamina -= 10;
+            F++;
             behaviourManager.GetAnim.SetInteger(isAttack, F%2);
         }
 	}
@@ -62,6 +65,15 @@ public class MoveBehaviour : GenericBehaviour
 		// Start a new jump.
 		if (jump && !behaviourManager.GetAnim.GetBool(jumpBool) && behaviourManager.IsGrounded())
 		{
+			if (BasicBehaviour.stamina > 15)
+			{
+				BasicBehaviour.stamina -= 15;
+				jumpHeight = 1.5f;
+			}
+			else
+			{
+                jumpHeight = 0.2f;
+            }
 			// Set jump related parameters.
 			behaviourManager.LockTempBehaviour(this.behaviourCode);
 			behaviourManager.GetAnim.SetBool(jumpBool, true);
@@ -125,7 +137,7 @@ public class MoveBehaviour : GenericBehaviour
 		speedSeeker += Input.GetAxis("Mouse ScrollWheel");
 		speedSeeker = Mathf.Clamp(speedSeeker, walkSpeed, runSpeed);
 		speed *= speedSeeker;
-		if (behaviourManager.IsSprinting())
+		if (behaviourManager.IsSprinting() && BasicBehaviour.stamina > 0)
 		{
 			speed = sprintSpeed;
 		}

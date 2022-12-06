@@ -3,6 +3,7 @@
 // FlyBehaviour inherits from GenericBehaviour. This class corresponds to the flying behaviour.
 public class FlyBehaviour : GenericBehaviour
 {
+	BasicBehaviour BasicBehaviour;
 	public string flyButton = "Fly";              // Default fly button.
 	public float flySpeed = 4.0f;                 // Default flying speed.
 	public float sprintFactor = 2.0f;             // How much sprinting affects fly speed.
@@ -15,8 +16,9 @@ public class FlyBehaviour : GenericBehaviour
 	// Start is always called after any Awake functions.
 	void Start()
 	{
-		// Set up the references.
-		flyBool = Animator.StringToHash("Fly");
+        BasicBehaviour = GetComponent<BasicBehaviour>();
+        // Set up the references.
+        flyBool = Animator.StringToHash("Fly");
 		col = this.GetComponent<CapsuleCollider>();
 		// Subscribe this behaviour on the manager.
 		behaviourManager.SubscribeBehaviour(this);
@@ -26,6 +28,7 @@ public class FlyBehaviour : GenericBehaviour
 	// Update is used to set features regardless the active behaviour.
 	void Update()
 	{
+		float _time = Time.deltaTime;
 		// Toggle fly by input, only if there is no overriding state or temporary transitions.
 		if (Input.GetButtonDown(flyButton) && !behaviourManager.IsOverriding() 
 			&& !behaviourManager.GetTempLockStatus(behaviourManager.GetDefaultBehaviour))
@@ -74,17 +77,19 @@ public class FlyBehaviour : GenericBehaviour
 	// LocalFixedUpdate overrides the virtual function of the base class.
 	public override void LocalFixedUpdate()
 	{
+		float _time = Time.deltaTime;
 		// Set camera limit angle related to fly mode.
 		behaviourManager.GetCamScript.SetMaxVerticalAngle(flyMaxVerticalAngle);
 
 		// Call the fly manager.
-		FlyManagement(behaviourManager.GetH, behaviourManager.GetV);
+		FlyManagement(behaviourManager.GetH, behaviourManager.GetV, _time);
 	}
 	// Deal with the player movement when flying.
-	void FlyManagement(float horizontal, float vertical)
+	void FlyManagement(float horizontal, float vertical, float _time)
 	{
-		// Add a force player's rigidbody according to the fly direction.
-		Vector3 direction = Rotating(horizontal, vertical);
+        BasicBehaviour.stamina -= _time * 2f;
+        // Add a force player's rigidbody according to the fly direction.
+        Vector3 direction = Rotating(horizontal, vertical);
 		behaviourManager.GetRigidBody.AddForce((direction * flySpeed * 100 * (behaviourManager.IsSprinting() ? sprintFactor : 1)), ForceMode.Acceleration);
 	}
 
